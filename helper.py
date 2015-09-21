@@ -7,6 +7,44 @@
 import csv
 
 import numpy as np
+import pandas as pd
+
+
+def read_csv_pandas(filename, min_df=2, top_n=1000, standardize=True):
+    """Read the given CSV file with pandas and do some preprocessing:
+    Remove all terms that occur in less than min_df documents, convert
+    to relative frequencies, extract the top_n most frequent terms (or
+    all in top_n is None), and standardize the term frequencies.
+
+    """
+    # read the csv file
+    data = pd.read_csv(filename, sep=",", index_col=0)
+    # transpose the data frame: rows are documents, columns are terms
+    data = data.transpose()
+    # remove terms that occur in less than min_df documents
+    data = data[data.columns[data.sum(axis=0) >= min_df]]
+    # convert to relative frequencies
+    data = data.div(data.sum(axis=1), axis=0)
+    # optionally extract the top_n most frequent terms
+    if top_n is not None:
+        data = data[data.sum(axis=0).order(ascending=False).head(top_n).index]
+    # optionally standardize the term frequencies
+    if standardize:
+        data = (data - data.mean(axis=0)) / data.std(axis=0)
+    return data
+
+
+def pandas_to_numpy(data_frame):
+    """Return names of terms, documents and authors and the frequency data
+    as numpy arrays.
+
+    """
+    terms = np.array(data_frame.columns.values, dtype=str)
+    documents = np.array(data_frame.index, dtype=str)
+    authors = np.array([d.split("_")[0] for d in documents])
+    data = np.array(data_frame)
+    return terms, documents, authors, data
+
 
 def read_csv(filename):
     """Read the given CSV file. The first row of the file should contain
